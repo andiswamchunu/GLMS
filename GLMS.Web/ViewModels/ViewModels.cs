@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using GLMS.Web.Models;
+using GLMS.Shared.Models;
 using GLMS.Web.Services;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;

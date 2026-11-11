@@ -15,4 +15,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GLMS.Shared\GLMS.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

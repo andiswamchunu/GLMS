@@ -1,5 +1,5 @@
 using GLMS.Web.Data;
-using GLMS.Web.Models;
+using GLMS.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

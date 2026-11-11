@@ -38,6 +38,7 @@ public class AgreementFileValidatorTests
     [InlineData("agreement.pdf")]
     [InlineData("Signed Agreement.PDF")]
     [InlineData("contract.v2.final.Pdf")]
+    git status
     public void Validate_PdfFile_DoesNotThrow(string fileName)
     {
         using var stream = PdfSamples.ValidPdfStream();
