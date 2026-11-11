@@ -1,4 +1,4 @@
-using GLMS.Web.Models;
+using GLMS.Shared.Models;
 
 namespace GLMS.Web.Services;
 

@@ -1,4 +1,4 @@
-using GLMS.Web.Models;
+using GLMS.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GLMS.Web.Data;
