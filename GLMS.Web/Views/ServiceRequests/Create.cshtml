@@ -1,0 +1,75 @@
+@model ServiceRequestCreateViewModel
+@{
+    ViewData["Title"] = "New service request";
+}
+<div class="page-head">
+    <div><h1>New service request</h1><p class="lead-muted">Type the amount in a foreign currency — GLMS fetches today's rate and calculates the cost in rand.</p></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="panel">
+            <form id="sr-form" asp-action="Create" method="post" data-rate-url="@Url.Action("Rate", "ServiceRequests")">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="mb-3">
+                    <label asp-for="ContractId" class="form-label"></label>
+                    <select asp-for="ContractId" class="form-select">
+                        <option value="">Select a contract…</option>
+                        @foreach (var option in Model.Contracts)
+                        {
+                            <option value="@option.Id"
+                                    data-eligible="@(option.Eligible ? "true" : "false")"
+                                    data-reason="@option.Reason"
+                                    selected="@(Model.ContractId == option.Id)">@option.Label</option>
+                        }
+                    </select>
+                    <span asp-validation-for="ContractId" class="text-danger"></span>
+                    <div id="contract-warning" class="alert alert-warning mt-2 d-none" role="alert"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="e.g. Refrigerated truck, Durban to Johannesburg"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label asp-for="CurrencyCode" class="form-label"></label>
+                        <select asp-for="CurrencyCode" class="form-select">
+                            @foreach (var code in ServiceRequestCreateViewModel.SupportedCurrencies)
+                            {
+                                <option value="@code" selected="@(Model.CurrencyCode == code)">@code</option>
+                            }
+                        </select>
+                        <span asp-validation-for="CurrencyCode" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-8">
+                        <label asp-for="Amount" class="form-label"></label>
+                        <input asp-for="Amount" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" autocomplete="off" />
+                        <span asp-validation-for="Amount" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" type="submit">Create service request</button>
+                <a class="btn btn-link" asp-action="Index">Cancel</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="panel rate-panel">
+            <h2>Cost in rand</h2>
+            <div id="zar-total" class="zar-total">R 0.00</div>
+            <div id="rate-line" class="text-muted small">Loading today's exchange rate…</div>
+            <div id="rate-warning" class="alert alert-warning small mt-3 mb-0 d-none"></div>
+            <p class="small text-muted mt-3 mb-0">The rate is looked up from a free exchange-rate API. The cost is calculated again on the server when you save, so the stored value always matches the rate shown in the request's details.</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/service-request.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,51 @@
+@model ServiceRequest
+@{
+    ViewData["Title"] = $"Service request #{Model.Id}";
+    var nextStatuses = Enum.GetValues<ServiceRequestStatus>().Where(s => ServiceRequestRules.CanTransition(Model.Status, s)).ToList();
+}
+<div class="page-head">
+    <div>
+        <h1>Service request #@Model.Id <span class="badge status-@Model.Status.ToString().ToLowerInvariant() align-middle">@Model.Status</span></h1>
+        <p class="lead-muted">@Model.Description</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="panel">
+            <h2>Cost</h2>
+            <div class="zar-total">R @Model.CostZar.ToString("N2")</div>
+            <dl class="detail-list mt-3">
+                <dt>Original amount</dt><dd>@Model.OriginalAmount.ToString("N2") @Model.CurrencyCode</dd>
+                <dt>Exchange rate</dt><dd>1 @Model.CurrencyCode = R @Model.ExchangeRate.ToString("0.0000")</dd>
+                <dt>Rate source</dt><dd>@Model.RateSource</dd>
+                <dt>Created</dt><dd>@Model.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="panel">
+            <h2>Contract</h2>
+            <dl class="detail-list">
+                <dt>Contract</dt><dd><a asp-controller="Contracts" asp-action="Details" asp-route-id="@Model.ContractId">#@Model.ContractId</a></dd>
+                <dt>Client</dt><dd>@Model.Contract?.Client?.Name</dd>
+                <dt>Service level</dt><dd>@Model.Contract?.ServiceLevel</dd>
+            </dl>
+            @if (nextStatuses.Count > 0)
+            {
+                <hr />
+                <h3 class="h6">Update status</h3>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var next in nextStatuses)
+                    {
+                        <form asp-action="ChangeStatus" asp-route-id="@Model.Id" method="post">
+                            <input type="hidden" name="status" value="@next" />
+                            <button class="btn btn-sm btn-outline-dark" type="submit">Mark as @next</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<a asp-action="Index" class="d-inline-block mt-3">← Back to service requests</a>

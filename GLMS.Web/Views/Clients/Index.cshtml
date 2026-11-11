@@ -1,0 +1,48 @@
+@model IEnumerable<Client>
+@{
+    ViewData["Title"] = "Clients";
+    var query = ViewData["Query"] as string;
+}
+<div class="page-head">
+    <div><h1>Clients</h1><p class="lead-muted">Companies TechMove ships for.</p></div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> New client</a>
+</div>
+
+<form method="get" class="mb-3 d-flex gap-2">
+    <input name="q" value="@query" class="form-control" style="max-width: 320px" placeholder="Search by name or region" />
+    <button class="btn btn-outline-dark" type="submit">Search</button>
+    @if (!string.IsNullOrWhiteSpace(query))
+    {
+        <a class="btn btn-link" asp-action="Index">Clear</a>
+    }
+</form>
+
+@if (!Model.Any())
+{
+    <div class="empty-state"><i class="bi bi-people"></i><p>No clients found.</p></div>
+}
+else
+{
+    <div class="panel p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Name</th><th>Region</th><th>Contact details</th><th class="text-center">Contracts</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td><a asp-action="Details" asp-route-id="@c.Id" class="fw-semibold">@c.Name</a></td>
+                    <td>@c.Region</td>
+                    <td class="text-muted">@c.ContactDetails</td>
+                    <td class="text-center">@c.Contracts.Count</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-dark" asp-action="Edit" asp-route-id="@c.Id">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@c.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this client?');">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

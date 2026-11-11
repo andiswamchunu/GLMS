@@ -1,0 +1,80 @@
+@model ContractListViewModel
+@{
+    ViewData["Title"] = "Contracts";
+}
+<div class="page-head">
+    <div><h1>Contracts</h1><p class="lead-muted">Search by date range and status.</p></div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-file-earmark-plus"></i> New contract</a>
+</div>
+
+<form method="get" asp-action="Index" class="panel filter-panel mb-3">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label asp-for="From" class="form-label"></label>
+            <input asp-for="From" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="To" class="form-label"></label>
+            <input asp-for="To" type="date" class="form-control" />
+            <span asp-validation-for="To" class="text-danger small"></span>
+        </div>
+        <div class="col-md-2">
+            <label asp-for="Status" class="form-label"></label>
+            <select asp-for="Status" asp-items="Html.GetEnumSelectList<ContractStatus>()" class="form-select">
+                <option value="">Any status</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label asp-for="ClientId" class="form-label"></label>
+            <select asp-for="ClientId" asp-items="Model.Clients" class="form-select">
+                <option value="">Any client</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-dark flex-grow-1" type="submit"><i class="bi bi-search"></i> Filter</button>
+            @if (Model.HasFilter)
+            {
+                <a class="btn btn-outline-secondary" asp-action="Index" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+            }
+        </div>
+    </div>
+    <div class="form-text mt-2">The date range finds contracts that were running at any point between the two dates.</div>
+</form>
+
+<p class="text-muted small">@Model.Results.Count contract(s) found</p>
+
+@if (Model.Results.Count == 0)
+{
+    <div class="empty-state"><i class="bi bi-folder2-open"></i><p>No contracts match your filters.</p></div>
+}
+else
+{
+    <div class="panel p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>#</th><th>Client</th><th>Period</th><th>Service level</th><th>Status</th><th class="text-center">Agreement</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model.Results)
+            {
+                <tr>
+                    <td><a asp-action="Details" asp-route-id="@c.Id" class="fw-semibold">#@c.Id</a></td>
+                    <td>@c.Client?.Name</td>
+                    <td>@c.StartDate.ToString("yyyy-MM-dd") → @c.EndDate.ToString("yyyy-MM-dd")</td>
+                    <td>@c.ServiceLevel</td>
+                    <td><span class="badge status-@c.Status.ToString().ToLowerInvariant()">@c.Status</span></td>
+                    <td class="text-center">
+                        @if (c.HasSignedAgreement)
+                        {
+                            <a asp-action="DownloadAgreement" asp-route-id="@c.Id" title="Download signed agreement"><i class="bi bi-file-earmark-pdf-fill text-danger"></i></a>
+                        }
+                        else
+                        {
+                            <i class="bi bi-dash text-muted"></i>
+                        }
+                    </td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-dark" asp-action="Details" asp-route-id="@c.Id">Open</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,60 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+<div class="page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p class="lead-muted">Contracts, service requests and costs at a glance.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-dark" asp-controller="Contracts" asp-action="Create"><i class="bi bi-file-earmark-plus"></i> New contract</a>
+        <a class="btn btn-primary" asp-controller="ServiceRequests" asp-action="Create"><i class="bi bi-plus-lg"></i> New service request</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="stat"><span class="stat-label">Clients</span><span class="stat-value">@Model.ClientCount</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat"><span class="stat-label">Active contracts</span><span class="stat-value">@Model.ActiveContracts</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat"><span class="stat-label">Open service requests</span><span class="stat-value">@Model.OpenRequests</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat stat-accent"><span class="stat-label">Total cost (ZAR)</span><span class="stat-value">R @Model.TotalCostZar.ToString("N2")</span></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="panel">
+            <h2>Contracts expiring in the next 30 days</h2>
+            @if (Model.ExpiringSoon.Count == 0)
+            {
+                <p class="text-muted mb-0">No active contracts are about to expire.</p>
+            }
+            else
+            {
+                <table class="table table-borderless align-middle mb-0">
+                    <tbody>
+                    @foreach (var c in Model.ExpiringSoon)
+                    {
+                        <tr>
+                            <td><a asp-controller="Contracts" asp-action="Details" asp-route-id="@c.Id">#@c.Id · @c.Client?.Name</a></td>
+                            <td class="text-muted">@c.ServiceLevel</td>
+                            <td class="text-end">ends @c.EndDate.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="panel">
+            <h2>Contracts by status</h2>
+            <ul class="status-list">
+                <li><span class="badge status-active">Active</span> <strong>@Model.ActiveContracts</strong></li>
+                <li><span class="badge status-draft">Draft</span> <strong>@Model.DraftContracts</strong></li>
+                <li><span class="badge status-onhold">On Hold</span> <strong>@Model.OnHoldContracts</strong></li>
+                <li><span class="badge status-expired">Expired</span> <strong>@Model.ExpiredContracts</strong></li>
+            </ul>
+            <p class="small text-muted mb-0">Service requests can only be raised against Active contracts.</p>
+        </div>
+    </div>
+</div>

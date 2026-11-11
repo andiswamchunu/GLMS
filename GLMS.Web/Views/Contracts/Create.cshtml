@@ -1,0 +1,24 @@
+@model Contract
+@{
+    ViewData["Title"] = "New contract";
+}
+<div class="page-head"><div><h1>New contract</h1><p class="lead-muted">Attach the signed agreement now or later from the contract page.</p></div></div>
+<div class="panel form-panel">
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_Form" model="Model" view-data="ViewData" />
+        <div class="mb-3">
+            <label asp-for="Status" class="form-label"></label>
+            <select asp-for="Status" asp-items="Html.GetEnumSelectList<ContractStatus>()" class="form-select"></select>
+            <div class="form-text">Later changes follow the lifecycle rules (Draft → Active → On Hold → Expired).</div>
+        </div>
+        <div class="mb-4">
+            <label for="agreement" class="form-label">Signed agreement (PDF, max 10 MB)</label>
+            <input id="agreement" name="agreement" type="file" accept="application/pdf,.pdf" class="form-control" />
+            <span class="text-danger field-validation-error">@Html.ValidationMessage("agreement")</span>
+        </div>
+        <button class="btn btn-primary" type="submit">Create contract</button>
+        <a class="btn btn-link" asp-action="Index">Cancel</a>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

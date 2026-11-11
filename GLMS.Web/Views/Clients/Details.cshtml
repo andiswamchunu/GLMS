@@ -1,0 +1,37 @@
+@model Client
+@{
+    ViewData["Title"] = Model.Name;
+}
+<div class="page-head">
+    <div><h1>@Model.Name</h1><p class="lead-muted">@Model.Region · @Model.ContactDetails</p></div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-dark" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+        <a class="btn btn-primary" asp-controller="Contracts" asp-action="Create" asp-route-clientId="@Model.Id"><i class="bi bi-file-earmark-plus"></i> New contract</a>
+    </div>
+</div>
+
+<div class="panel p-0">
+    <h2 class="p-3 pb-0">Contracts</h2>
+    @if (!Model.Contracts.Any())
+    {
+        <p class="text-muted p-3 mb-0">This client has no contracts yet.</p>
+    }
+    else
+    {
+        <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>#</th><th>Period</th><th>Service level</th><th>Status</th></tr></thead>
+            <tbody>
+            @foreach (var c in Model.Contracts.OrderByDescending(c => c.EndDate))
+            {
+                <tr>
+                    <td><a asp-controller="Contracts" asp-action="Details" asp-route-id="@c.Id">#@c.Id</a></td>
+                    <td>@c.StartDate.ToString("yyyy-MM-dd") → @c.EndDate.ToString("yyyy-MM-dd")</td>
+                    <td>@c.ServiceLevel</td>
+                    <td><span class="badge status-@c.Status.ToString().ToLowerInvariant()">@c.Status</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+<a asp-action="Index" class="d-inline-block mt-3">← Back to clients</a>

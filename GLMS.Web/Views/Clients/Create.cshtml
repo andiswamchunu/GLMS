@@ -1,0 +1,14 @@
+@model Client
+@{
+    ViewData["Title"] = "New client";
+}
+<div class="page-head"><div><h1>New client</h1></div></div>
+<div class="panel form-panel">
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_Form" model="Model" />
+        <button class="btn btn-primary" type="submit">Create client</button>
+        <a class="btn btn-link" asp-action="Index">Cancel</a>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

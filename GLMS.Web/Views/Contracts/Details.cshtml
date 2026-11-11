@@ -1,0 +1,106 @@
+@model ContractDetailsViewModel
+@{
+    var c = Model.Contract;
+    ViewData["Title"] = $"Contract #{c.Id}";
+}
+<div class="page-head">
+    <div>
+        <h1>Contract #@c.Id <span class="badge status-@c.Status.ToString().ToLowerInvariant() align-middle">@c.Status</span></h1>
+        <p class="lead-muted">@c.Client?.Name · @c.Client?.Region</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-dark" asp-action="Edit" asp-route-id="@c.Id">Edit</a>
+        @if (Model.CanCreateRequest.Allowed)
+        {
+            <a class="btn btn-primary" asp-controller="ServiceRequests" asp-action="Create" asp-route-contractId="@c.Id"><i class="bi bi-plus-lg"></i> New service request</a>
+        }
+    </div>
+</div>
+
+@if (!Model.CanCreateRequest.Allowed)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-2"><i class="bi bi-slash-circle"></i> @Model.CanCreateRequest.Reason</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="panel">
+            <h2>Details</h2>
+            <dl class="detail-list">
+                <dt>Client</dt><dd><a asp-controller="Clients" asp-action="Details" asp-route-id="@c.ClientId">@c.Client?.Name</a></dd>
+                <dt>Start date</dt><dd>@c.StartDate.ToString("yyyy-MM-dd")</dd>
+                <dt>End date</dt><dd>@c.EndDate.ToString("yyyy-MM-dd")</dd>
+                <dt>Service level</dt><dd>@c.ServiceLevel</dd>
+            </dl>
+            @if (Model.AllowedTransitions.Count > 0)
+            {
+                <hr />
+                <h3 class="h6">Change status</h3>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var next in Model.AllowedTransitions)
+                    {
+                        <form asp-action="ChangeStatus" asp-route-id="@c.Id" method="post">
+                            <input type="hidden" name="status" value="@next" />
+                            <button class="btn btn-sm btn-outline-dark" type="submit">Mark as @next</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="panel">
+            <h2>Signed agreement</h2>
+            @if (c.HasSignedAgreement)
+            {
+                <div class="file-card">
+                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                    <div>
+                        <div class="fw-semibold">@c.SignedAgreementOriginalName</div>
+                        <div class="small text-muted">Uploaded @c.SignedAgreementUploadedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                    </div>
+                    <a class="btn btn-sm btn-primary ms-auto" asp-action="DownloadAgreement" asp-route-id="@c.Id"><i class="bi bi-download"></i> Download</a>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">No signed agreement has been uploaded yet.</p>
+            }
+            <form asp-action="UploadAgreement" asp-route-id="@c.Id" method="post" enctype="multipart/form-data" class="mt-3">
+                <label for="agreement" class="form-label">@(c.HasSignedAgreement ? "Replace the agreement" : "Upload the agreement") (PDF only, max 10 MB)</label>
+                <div class="input-group">
+                    <input id="agreement" name="agreement" type="file" accept="application/pdf,.pdf" class="form-control" required />
+                    <button class="btn btn-dark" type="submit"><i class="bi bi-upload"></i> Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel p-0 mt-4">
+    <h2 class="p-3 pb-0">Service requests</h2>
+    @if (!c.ServiceRequests.Any())
+    {
+        <p class="text-muted p-3 mb-0">No service requests have been raised on this contract.</p>
+    }
+    else
+    {
+        <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>#</th><th>Description</th><th class="text-end">Original</th><th class="text-end">Cost (ZAR)</th><th>Status</th></tr></thead>
+            <tbody>
+            @foreach (var r in c.ServiceRequests.OrderByDescending(r => r.CreatedAtUtc))
+            {
+                <tr>
+                    <td><a asp-controller="ServiceRequests" asp-action="Details" asp-route-id="@r.Id">#@r.Id</a></td>
+                    <td>@r.Description</td>
+                    <td class="text-end">@r.OriginalAmount.ToString("N2") @r.CurrencyCode</td>
+                    <td class="text-end fw-semibold">R @r.CostZar.ToString("N2")</td>
+                    <td><span class="badge status-@r.Status.ToString().ToLowerInvariant()">@r.Status</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+<a asp-action="Index" class="d-inline-block mt-3">← Back to contracts</a>
