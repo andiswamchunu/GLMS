@@ -25,7 +25,19 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: "8080"
+
+      # SQL Server
       ConnectionStrings__GlmsDb: "Server=sql-server-db,1433;Database=GlmsDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+
+      # JWT Authentication
+      Jwt__Issuer: "GLMS.Api"
+      Jwt__Audience: "GLMS.Web"
+      Jwt__Key: "${JWT_KEY:?JWT_KEY must be configured}"
+
+      # Administrator Credentials
+      Admin__Username: "${ADMIN_USERNAME:?ADMIN_USERNAME must be configured}"
+      Admin__PasswordHash: "${ADMIN_PASSWORD_HASH:?ADMIN_PASSWORD_HASH must be configured}"
+
     depends_on:
       - sql-server-db
     volumes:
@@ -43,8 +55,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: "8080"
-      ApiBaseUrl: "http://glms-backend-api:8080/"
+
+      # Backend API connection
+      ApiSettings__BaseUrl: "http://glms-backend-api:8080/"
+
+      # Existing database configuration
       ConnectionStrings__GlmsDb: "Server=sql-server-db,1433;Database=GlmsDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+
     depends_on:
       - glms-backend-api
     networks:
@@ -57,4 +74,3 @@ volumes:
 networks:
   glms-network:
     driver: bridge
-

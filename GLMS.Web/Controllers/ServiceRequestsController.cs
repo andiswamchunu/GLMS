@@ -9,15 +9,15 @@ namespace GLMS.Web.Controllers;
 
 public class ServiceRequestsController : Controller
 {
-    private readonly GlmsDbContext _db;
+    private readonly ContractsApiClient _contracts;
     private readonly IServiceRequestService _requests;
     private readonly ICurrencyService _currency;
     private readonly TimeProvider _time;
 
     public ServiceRequestsController(
-        GlmsDbContext db, IServiceRequestService requests, ICurrencyService currency, TimeProvider time)
+        ContractsApiClient contracts, IServiceRequestService requests, ICurrencyService currency, TimeProvider time)
     {
-        _db = db;
+        _contracts = contracts;
         _requests = requests;
         _currency = currency;
         _time = time;
@@ -109,9 +109,7 @@ public class ServiceRequestsController : Controller
     private async Task<IReadOnlyList<ContractOption>> ContractOptionsAsync(CancellationToken ct)
     {
         var today = _time.Today();
-        var contracts = await _db.Contracts.AsNoTracking().Include(c => c.Client)
-            .OrderBy(c => c.Client!.Name).ThenBy(c => c.EndDate)
-            .ToListAsync(ct);
+        var contracts = (await _contracts.GetContractsAsync(ct: ct)).OrderBy(c => c.Client?.Name).ThenBy(c => c.EndDate).ToList();
 
         return contracts.Select(c =>
         {

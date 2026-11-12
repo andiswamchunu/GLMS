@@ -1,27 +1,24 @@
-
 using System.Net;
-using GLMS.Web.Data;
 using GLMS.Shared.Models;
 using GLMS.Web.Services;
 using GLMS.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace GLMS.Web.Controllers;
 
 public class ContractsController : Controller
 {
     private readonly ContractsApiClient _api;
-    private readonly GlmsDbContext _db;
+    private readonly ClientsApiClient _clients;
     private readonly TimeProvider _time;
 
     public ContractsController(
-        GlmsDbContext db,
+        ClientsApiClient clients,
         TimeProvider time,
         ContractsApiClient api)
     {
-        _db = db;
+        _clients = clients;
         _time = time;
         _api = api;
     }
@@ -352,10 +349,7 @@ public class ContractsController : Controller
         int? selected,
         CancellationToken ct)
     {
-        var clients = await _db.Clients
-            .AsNoTracking()
-            .OrderBy(c => c.Name)
-            .ToListAsync(ct);
+        var clients = (await _clients.ListAsync(null, ct) ?? new List<Client>()).OrderBy(c => c.Name).ToList();
 
         return new SelectList(
             clients,
