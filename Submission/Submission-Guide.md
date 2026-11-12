@@ -16,10 +16,10 @@ https://github.com/andiswamchunu/GLMS
 - docker-compose.yml
 
 ## Technical Reflection Report
-Submission/Technical-Reflection-Report.pdf
+Submission/ST10545261_POE.pdf
 
-## Docker Screenshots
-Submission/Screenshots/
+## Screenshots
+Submission/GLMS_Screenshots_final/
 
 ## Demonstration Video
 Submission/Video/
