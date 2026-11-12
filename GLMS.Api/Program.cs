@@ -65,6 +65,9 @@ builder.Services.AddScoped<ICurrencyConversionStrategy,
     CachedConversionStrategy>();
 
 
+
+
+
 // Register currency conversion strategies
 builder.Services.AddHttpClient<LiveApiConversionStrategy>();
 

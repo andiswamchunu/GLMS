@@ -1,9 +1,8 @@
 ﻿
-using GLMS.Api.Data;
 using GLMS.Api.DTOs;
+using GLMS.Api.Services;
 using GLMS.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GLMS.Api.Controllers;
 
@@ -11,104 +10,68 @@ namespace GLMS.Api.Controllers;
 [Route("api/[controller]")]
 public class ContractsController : ControllerBase
 {
-    private readonly GlmsDbContext _context;
+    private readonly IContractService _contractService;
 
-    public ContractsController(GlmsDbContext context)
+    public ContractsController(IContractService contractService)
     {
-        _context = context;
+        _contractService = contractService;
     }
 
+    // GET: api/Contracts
     [HttpGet]
     public async Task<IActionResult> GetContracts(
-        [FromQuery] string? status)
+        [FromQuery] string? status,
+        CancellationToken ct)
     {
-        var query = _context.Contracts
-            .AsNoTracking()
-            .AsQueryable();
+        ContractStatus? parsedStatus = null;
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            if (!Enum.TryParse<GLMS.Shared.Models.ContractStatus>(
-                status, true, out var parsedStatus)
-                || !Enum.IsDefined(parsedStatus))
+            if (!Enum.TryParse<ContractStatus>(
+                    status, true, out var value)
+                || !Enum.IsDefined(value))
             {
-                return BadRequest("Invalid contract status.");
+                return BadRequest(new
+                {
+                    message = "Invalid contract status."
+                });
             }
 
-            query = query.Where(c => c.Status == parsedStatus);
+            parsedStatus = value;
         }
 
-        var contracts = await query
-            .OrderBy(c => c.Id)
-            .Select(c => new
+        var contracts = await _contractService.SearchAsync(
+            new ContractSearchCriteria
             {
-                c.Id,
-                c.ClientId,
-                c.StartDate,
-                c.EndDate,
-                c.Status,
-                c.ServiceLevel
-            })
-            .ToListAsync();
+                Status = parsedStatus
+            }, ct);
 
-        return Ok(contracts);
+        return Ok(contracts.Select(c => new
+        {
+            c.Id,
+            c.ClientId,
+            c.StartDate,
+            c.EndDate,
+            c.Status,
+            c.ServiceLevel,
+            c.HasSignedAgreement,
+            Client = c.Client == null ? null : new
+            {
+                c.Client.Id,
+                c.Client.Name
+            }
+        }));
     }
 
-
-    [HttpPost]
-    public async Task<IActionResult> CreateContract(
-        [FromBody] CreateContractDto dto)
-    {
-        // Confirm that the client exists
-        bool clientExists = await _context.Clients
-            .AnyAsync(c => c.Id == dto.ClientId);
-
-        if (!clientExists)
-        {
-            return BadRequest(new
-            {
-                message = "The selected client does not exist."
-            });
-        }
-
-        // Create a new contract
-        var contract = new GLMS.Shared.Models.Contract
-        {
-            ClientId = dto.ClientId,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            ServiceLevel = dto.ServiceLevel,
-            Status = GLMS.Shared.Models.ContractStatus.Draft
-        };
-
-        // Save to SQL Server
-        _context.Contracts.Add(contract);
-        await _context.SaveChangesAsync();
-
-        // Return the created contract
-        return Created(
-            $"/api/contracts/{contract.Id}",
-            new
-            {
-                contract.Id,
-                contract.ClientId,
-                contract.StartDate,
-                contract.EndDate,
-                contract.ServiceLevel,
-                contract.Status
-            });
-    }
-
-
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(
+    // GET: api/Contracts/5
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetContract(
         int id,
-        [FromBody] UpdateContractStatusDto dto)
+        CancellationToken ct)
     {
-        var contract = await _context.Contracts
-            .FindAsync(id);
+        var contract = await _contractService.GetAsync(id, ct);
 
-        if (contract == null)
+        if (contract is null)
         {
             return NotFound(new
             {
@@ -116,6 +79,104 @@ public class ContractsController : ControllerBase
             });
         }
 
+        return Ok(new
+        {
+            contract.Id,
+            contract.ClientId,
+            contract.StartDate,
+            contract.EndDate,
+            contract.Status,
+            contract.ServiceLevel,
+            contract.HasSignedAgreement,
+            Client = contract.Client == null ? null : new
+            {
+                contract.Client.Id,
+                contract.Client.Name
+            },
+            ServiceRequests = contract.ServiceRequests
+        });
+    }
+
+    // POST: api/Contracts
+    [HttpPost]
+    public async Task<IActionResult> CreateContract(
+        [FromBody] CreateContractDto dto,
+        CancellationToken ct)
+    {
+        var contract = new Contract
+        {
+            ClientId = dto.ClientId,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            ServiceLevel = dto.ServiceLevel,
+            Status = ContractStatus.Draft
+        };
+
+        try
+        {
+            var created = await _contractService.CreateAsync(
+                contract, ct);
+
+            return CreatedAtAction(
+                nameof(GetContract),
+                new { id = created.Id },
+                new
+                {
+                    created.Id,
+                    created.ClientId,
+                    created.StartDate,
+                    created.EndDate,
+                    created.ServiceLevel,
+                    created.Status
+                });
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // PUT: api/Contracts/5
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> EditContract(
+        int id,
+        [FromBody] Contract input,
+        CancellationToken ct)
+    {
+        if (id != input.Id)
+        {
+            return BadRequest(new
+            {
+                message = "Contract ID mismatch."
+            });
+        }
+
+        if (await _contractService.GetAsync(id, ct) is null)
+        {
+            return NotFound(new
+            {
+                message = "Contract not found."
+            });
+        }
+
+        try
+        {
+            await _contractService.UpdateAsync(input, ct);
+            return NoContent();
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // PATCH: api/Contracts/5/status
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(
+        int id,
+        [FromBody] UpdateContractStatusDto dto,
+        CancellationToken ct)
+    {
         if (!Enum.IsDefined(dto.Status))
         {
             return BadRequest(new
@@ -124,40 +185,103 @@ public class ContractsController : ControllerBase
             });
         }
 
-        var currentStatus = contract.Status;
-        var newStatus = dto.Status;
-
-        bool allowed = (currentStatus, newStatus) switch
+        if (await _contractService.GetAsync(id, ct) is null)
         {
-            (ContractStatus.Draft, ContractStatus.Active) => true,
-            (ContractStatus.Draft, ContractStatus.Expired) => true,
-            (ContractStatus.Active, ContractStatus.OnHold) => true,
-            (ContractStatus.Active, ContractStatus.Expired) => true,
-            (ContractStatus.OnHold, ContractStatus.Active) => true,
-            (ContractStatus.OnHold, ContractStatus.Expired) => true,
-            _ => false
-        };
-
-        if (!allowed)
-        {
-            return BadRequest(new
+            return NotFound(new
             {
-                message = $"Cannot change status from {currentStatus} to {newStatus}."
+                message = "Contract not found."
             });
         }
 
-        contract.Status = newStatus;
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
+        try
         {
-            contract.Id,
-            contract.Status,
-            message = "Contract status updated successfully."
-        });
+            await _contractService.ChangeStatusAsync(
+                id, dto.Status, ct);
+
+            return Ok(new
+            {
+                id,
+                Status = dto.Status,
+                message = "Contract status updated successfully."
+            });
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
+    // POST: api/Contracts/5/agreement
+    [HttpPost("{id:int}/agreement")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(10 * 1024 * 1024 + 1024)]
+    public async Task<IActionResult> UploadAgreement(
+        int id,
+        IFormFile agreement,
+        CancellationToken ct)
+    {
+        if (agreement is null || agreement.Length == 0)
+        {
+            return BadRequest(new
+            {
+                message = "Please select a PDF agreement."
+            });
+        }
 
+        if (await _contractService.GetAsync(id, ct) is null)
+        {
+            return NotFound(new
+            {
+                message = "Contract not found."
+            });
+        }
+
+        try
+        {
+            await using var stream = agreement.OpenReadStream();
+
+            await _contractService.AttachAgreementAsync(
+                id,
+                agreement.FileName,
+                agreement.Length,
+                stream,
+                ct);
+
+            return Ok(new
+            {
+                message = "Signed agreement uploaded successfully."
+            });
+        }
+        catch (InvalidFileException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (BusinessRuleException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // GET: api/Contracts/5/agreement
+    [HttpGet("{id:int}/agreement")]
+    public async Task<IActionResult> DownloadAgreement(
+        int id,
+        CancellationToken ct)
+    {
+        var download = await _contractService.OpenAgreementAsync(
+            id, ct);
+
+        if (download is null)
+        {
+            return NotFound(new
+            {
+                message = "No signed agreement was found."
+            });
+        }
+
+        return File(
+            download.Content,
+            "application/pdf",
+            download.FileName);
+    }
 }
-
